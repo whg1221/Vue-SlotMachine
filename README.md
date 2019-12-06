@@ -1,3 +1,9 @@
+### 修改说明：
+
+点击左上角5次出内定设置弹层，可按顺序指定相应中奖号码。
+
+------
+
 # Slot Machine
 
 ![image](https://github.com/guahsu/Vue-SlotMachine/blob/master/demo.png?raw=true)  
@@ -6,7 +12,7 @@
 很多想法繼承年初寫的[大轉盤](https://github.com/guahsu/Vue-TurnTable/)，  
 主要藉由CSS 3D做獎項的主體，透過JS寫入CSS變數來更改起始與結束的旋轉角度，  
 也一樣有寫成可以透過Config來調節獎項內容與樣式。
-  
+
 原始碼有附上部分程式備註，歡迎隨意修改使用，  
 若有發現錯誤或更好的做法也希望能告知:D!  
 
