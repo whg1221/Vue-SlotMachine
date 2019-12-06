@@ -24,7 +24,8 @@ export default {
     config: {
       type: Object,
       required: true
-    }
+    },
+    resultNum: 0
   },
   data () {
     return {
@@ -91,7 +92,7 @@ export default {
     },
     autoTurn () {
       // 取得隨機角度(預設至少跑5圈)
-      let randomDeg = (Math.random() * 360) + (360 * 5)
+      let randomDeg = (this.resultNum * 36) + (360 * 5)
       randomDeg -= randomDeg % this.rotate // 減去餘數，避免有高低不一的狀況
       this.targetDeg = randomDeg
       // 取得隨機回彈角度

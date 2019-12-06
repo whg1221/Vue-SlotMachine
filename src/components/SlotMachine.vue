@@ -1,7 +1,9 @@
 <template>
   <div id="SlotMachine">
+    <div class="hidden-trigger" @click="()=>{count++}"></div>
+
     <div class="badge">
-      <span>SlotMachine</span>
+      <span>WishYouLuck~</span>
     </div>
     <div class="body">
       <div class="window">
@@ -12,7 +14,8 @@
             @finished="isFinished"
             :trigger="trigger"
             :config="config"
-            :key="index">
+            :key="index"
+            :resultNum="luckyNum[index]">
           </Gift>
           <div class="fence1"></div>
           <div class="fence2"></div>
@@ -28,28 +31,34 @@
     <div
       class="history"
       @click="openResultList = true">
-      OPEN RESULT
+      查看结果
     </div>
     <div
        @click.self="openResultList = false"
        :class="['resultList', {'openResultList' : openResultList }]">
       <div class="resultList-container">
-        <div class="result" v-for="(result, index) in resultList" :key="index">{{ `Round${index + 1}: ${result}` }}</div>
+        <div class="result" v-for="(result, index) in resultList" :key="index">{{ `Round${index + 1}: ${result.join('')}` }}</div>
       </div>
     </div>
-    <div class="github">
-      <a href=https://github.com/guahsu/Vue-SlotMachine/ target=_blank>→ GitHub Source Code</a>
-    </div>
-
+    <!-- 配置弹层 -->
+    <Modal
+      v-if="displayHiddenSetting"
+      :maxNum="maxNum"
+      :list="list"
+      @confirmed="isConfirmed"
+      @calcelled="isCancelled">
+    </Modal>
   </div>
 </template>
 
 <script>
 import Gift from './Gift'
+import Modal from './Modal'
 export default {
   name: 'SlotMachine',
   components: {
-    Gift
+    Gift,
+    Modal
   },
   data () {
     return {
@@ -69,7 +78,7 @@ export default {
         {
           style: 'gift-style',
           gifts: Array.from(new Array(10), (val, index) => { return { type: 'text', name: index } }),
-          duration: 5000,
+          duration: 6000,
           fontSize: 150,
           height: 200,
           width: 200
@@ -77,7 +86,7 @@ export default {
         {
           style: 'gift-style',
           gifts: Array.from(new Array(10), (val, index) => { return { type: 'text', name: index } }),
-          duration: 6000,
+          duration: 8000,
           fontSize: 150,
           height: 200,
           width: 200
@@ -85,11 +94,45 @@ export default {
       ],
       openResultList: false,
       resultList: [],
-      result: []
+      result: [],
+      // 新增
+      count: 0, // 计数器
+      displayHiddenSetting: false, // 展示隐藏
+      maxNum: 230, // 抽奖总人数
+      list: Array(15), // 内定名单
+      luckyNum: [0, 0, 0] // 中奖号码
+    }
+  },
+  watch: {
+    // 触发配置弹层
+    count: function (val) {
+      if (val >= 5) {
+        this.displayHiddenSetting = true
+      }
     }
   },
   methods: {
+    // 点击旋转
     turn () {
+      if (this.isInDefaultList()) { // 在内定名单中
+        let luckyString = this.list[this.resultList.length]
+        if (luckyString.length === 1) {
+          luckyString = '00' + luckyString
+        } else if (luckyString.length === 2) {
+          luckyString = '0' + luckyString
+        }
+        let luckyNum = luckyString.split('')
+        for (let i = 0; i < 3; i++) {
+          luckyNum[i] = parseInt(luckyNum[i])
+        }
+        this.luckyNum = luckyNum
+      } else {
+        this.luckyNum = this.getRandomNum()
+      }
+      this.goToTurn()
+    },
+    // 开始旋转
+    goToTurn () {
       this.active = true
       setTimeout(() => {
         this.active = false
@@ -97,6 +140,46 @@ export default {
       this.disabled = true
       this.trigger = new Date()
     },
+    // 本次抽奖号码是否在内定名单中
+    isInDefaultList () {
+      let _index = this.resultList.length // 第N次抽奖（从0开始）
+      if (this.list[_index]) {
+        return true
+      }
+      return false
+    },
+    // 获取随机数
+    getRandomNum () {
+      let luckyString = Math.ceil(Math.random() * this.maxNum) + ''
+      if (luckyString.length === 1) {
+        luckyString = '00' + luckyString
+      } else if (luckyString.length === 2) {
+        luckyString = '0' + luckyString
+      }
+      if (this.isSuperLucky(luckyString)) {
+        return this.getRandomNum() // 很神奇这里必须要return
+      } else {
+        let luckyNum = luckyString.split('')
+        for (let i = 0; i < 3; i++) {
+          luckyNum[i] = parseInt(luckyNum[i])
+        }
+        return luckyNum
+      }
+    },
+    // 判断是否超幸运
+    isSuperLucky (luckyString) {
+      let flattenList = []
+      for (let i = 0; i < this.resultList.length; i++) {
+        let item = this.resultList[i].join('')
+        flattenList.push(item)
+      }
+      if (flattenList.indexOf(luckyString) !== -1) {
+        return true
+      } else {
+        return false
+      }
+    },
+    // gift回调
     isFinished (val) {
       const autoTurnList = this.$el.querySelectorAll('.autoTurn')
       this.result.push(val)
@@ -105,6 +188,19 @@ export default {
         this.resultList.push(this.result)
         this.result = []
       }
+    },
+    // 配置确认
+    isConfirmed (val) {
+      let {maxNum, stage1Nums, stage2Nums, stage3Nums, stage4Nums, stage5Num} = val
+      this.maxNum = maxNum
+      this.list = stage1Nums.concat(stage2Nums).concat(stage3Nums).concat(stage4Nums).concat(stage5Num)
+      this.count = 0
+      this.displayHiddenSetting = false
+    },
+    // 配置取消
+    isCancelled () {
+      this.count = 0
+      this.displayHiddenSetting = false
     }
   }
 }
@@ -131,6 +227,21 @@ export default {
   flex-direction: column;
   justify-content: center;
   user-select: none;
+  .hidden-trigger {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    top: 0;
+    left: 0;
+  }
+  .hidden-area {
+    position: absolute;
+    top: 0;
+    right: 0;
+    button {
+      display: block;
+    }
+  }
   .badge {
     position: relative;
     margin-top: 30px;
@@ -155,14 +266,14 @@ export default {
         right: 1px;
         bottom: 1px;
         color: $blue;
-        content: 'SlotMachine';
+        content: 'WishYouLuck~';
       }
       &::after {
         position: absolute;
         right: 3px;
         bottom: 3px;
         color: $white;
-        content: 'SlotMachine';
+        content: 'WishYouLuck~';
       }
     }
   }
